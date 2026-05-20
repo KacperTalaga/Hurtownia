@@ -1,42 +1,78 @@
-from models.zamowienia import Zamowienie
+from __future__ import annotations
+from typing import TYPE_CHECKING, List
+
+if TYPE_CHECKING:
+    from models.system import System
+    from models.magazyn import Magazyn
+    from models.towar import Towar
+    from models.zamowienia import Zamowienie
+    from models.faktury import Faktura
+
 
 class Osoba:
-    def __init__(self, imie: str, nazwisko: str, login: str, haslo:str):
+    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str):
         self.imie = imie
         self.nazwisko = nazwisko
         self.login = login
-        self.__haslo = haslo # atrybut prywatny
+        self.__haslo = haslo
 
     def sprawdz_haslo(self, haslo: str) -> bool:
-        """Sprawdza hasło (wewnętrznie, bo atrybut prywatny)"""
         return self.__haslo == haslo
-        
-class Pracownik(Osoba):  # Pracownik dziedziczy po osobie
-    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str, rola: str):
-        super().__init__(imie, nazwisko, login, haslo) # wywoluje konstruktor klasy nadrzednej - atrybuty z klasy nadrzednej(Osoba) zostaną zapisane do tej klasy
-        self.rola = rola
 
-    def wprowadz_nowy_towar(self, rola: str) -> bool: # True jak się udało wprowadzić, False jeśli nie - pewnie do zmiany
-        if rola == 'Magazynier':
-            print("Można wprowadzić")
-            return True
-        else: 
-            print("Metoda dostępna wyłącznie dla magazyniera")
-            return False
 
-    def kompletowanie_zamowienia(self, rola: str, zamowienie: Zamowienie) -> bool:
-        if rola == 'Obsluga':
-            print("Można skompletować")
-            return True
-        else: 
-            print("Metoda dostępna wyłącznie dla obsługi")
-            return False
-        
-class Klient(Osoba):
-    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str, adres: str):
-        super().__init__(imie, nazwisko, login, haslo)
-        self.adres = adres
-
-class Kierownik(Osoba):
+class Pracownik(Osoba):
     def __init__(self, imie: str, nazwisko: str, login: str, haslo: str):
         super().__init__(imie, nazwisko, login, haslo)
+
+
+class Klient(Osoba):
+    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str, adres: str, saldo: float = 0.0):
+        super().__init__(imie, nazwisko, login, haslo)
+        self.adres = adres
+        self.saldo = saldo
+        self.zamowienia: List[Zamowienie] = []
+
+    def zloz_zamowienie(self) -> Zamowienie:
+        pass
+
+    def historia_zamowien(self) -> List[Zamowienie]:
+        pass
+
+    def aktualizuj_saldo(self, kwota: float) -> None:
+        pass
+
+
+class Kierownik(Pracownik):
+    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str):
+        super().__init__(imie, nazwisko, login, haslo)
+
+    def zarejerstruj_pracownika(self, system: System, pracownik: Pracownik) -> None:
+        pass
+
+    def inwentaryzacja(self, magazyn: Magazyn) -> None:
+        pass
+
+    def raport_stanu_magazynu(self, magazyn: Magazyn) -> None:
+        pass
+
+
+class Magazynier(Pracownik):
+    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str):
+        super().__init__(imie, nazwisko, login, haslo)
+
+    def przyjmij_dostawe(self, magazyn: Magazyn, towar: Towar, ilosc: float) -> None:
+        pass
+
+    def wprowadz_nowy_towar(self, magazyn: Magazyn, towar: Towar) -> None:
+        pass
+
+
+class Obsluga(Pracownik):
+    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str):
+        super().__init__(imie, nazwisko, login, haslo)
+
+    def kompletuj_zamowienie(self, zamowienie: Zamowienie, magazyn: Magazyn) -> bool:
+        pass
+
+    def wystaw_fakture(self, zamowienie: Zamowienie) -> Faktura:
+        pass
