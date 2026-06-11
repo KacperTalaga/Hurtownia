@@ -6,7 +6,14 @@ from typing import Any, Dict, List, TYPE_CHECKING
 if TYPE_CHECKING:
     from models.system import System
 
-from models.osoby import Klient, Osoba
+from models.osoby import Kierownik, Klient, Magazynier, Obsluga, Osoba, Pracownik
+
+# Mapowanie nazwa typu -> klasa pracownika przy odtwarzaniu z pliku
+TYPY_PRACOWNIKOW = {
+    "Magazynier": Magazynier,
+    "Obsluga": Obsluga,
+    "Kierownik": Kierownik,
+}
 
 
 class Repozytorium:
@@ -48,6 +55,14 @@ class Repozytorium:
                 "adres": osoba.adres,
                 "saldo": osoba.saldo,
             }
+        if isinstance(osoba, Pracownik):
+            return {
+                "typ": type(osoba).__name__,
+                "imie": osoba.imie,
+                "nazwisko": osoba.nazwisko,
+                "login": osoba.login,
+                "haslo": haslo,
+            }
         raise ValueError(f"Nieobsługiwany typ użytkownika: {type(osoba).__name__}")
 
     def _osoba_z_dict(self, rekord: Dict[str, Any]) -> Osoba:
@@ -61,5 +76,13 @@ class Repozytorium:
                 rekord["haslo"],
                 rekord["adres"],
                 rekord.get("saldo", 0.0),
+            )
+        klasa = TYPY_PRACOWNIKOW.get(typ)
+        if klasa is not None:
+            return klasa(
+                rekord["imie"],
+                rekord["nazwisko"],
+                rekord["login"],
+                rekord["haslo"],
             )
         raise ValueError(f"Nieznany typ użytkownika w pliku danych: {typ}")
