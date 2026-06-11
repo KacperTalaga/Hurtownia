@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Type, TYPE_CHECKING
 if TYPE_CHECKING:
     from models.osoby import Osoba, Pracownik
     from models.towar import Towar
+    from models.zamowienia import Zamowienie
 
 from models.osoby import Klient, Kierownik, Magazynier, Obsluga
 from models.magazyn import Magazyn
@@ -27,15 +28,19 @@ class System:
         self.repozytorium: Repozytorium = Repozytorium()
         self.uzytkownicy: List[Osoba] = self.repozytorium.wczytaj_uzytkownikow()
         self.zalogowany_uzytkownik: Optional[Osoba] = None
+
         self.magazyn: Optional[Magazyn] = DaneStartowe.utworz_magazyn_startowy()
+
         if self.magazyn is not None:
             self.towary: List[Towar] = [pozycja.towar for pozycja in self.magazyn.pozycje]
         else:
             self.towary = []
+
+        self.zamowienia: List[Zamowienie] = DaneStartowe.utworz_zamowienia_startowe()
+        
         # Konto startowe kierownika — odtwarzane przy starcie, dopóki realny kierownik nie istnieje
         if not any(isinstance(u, Kierownik) for u in self.uzytkownicy):
             self._dodaj_uzytkownika(Kierownik("Anna", "Kowalska", LOGIN_KIEROWNIKA, HASLO_KIEROWNIKA))
-        
 
     def rejestracja_klienta(self, imie: str, nazwisko: str, login: str, haslo: str, adres: str) -> bool:
         """Tworzy i rejestruje nowego klienta.
