@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, List
 
+from models.zamowienia import StatusZamowienia
+
 if TYPE_CHECKING:
     from models.magazyn import Magazyn
     from models.towar import Towar
@@ -68,7 +70,32 @@ class Obsluga(Pracownik):
         super().__init__(imie, nazwisko, login, haslo)
 
     def kompletuj_zamowienie(self, zamowienie: Zamowienie, magazyn: Magazyn) -> bool:
-        pass
+           """Kompletuje zamówienie przez rezerwację wymaganych towarów w magazynie."""
+           if zamowienie.status != StatusZamowienia.W_REALIZACJI:
+            return False
+
+           if not zamowienie.pozycje:
+            return False
+
+           for pozycja_zamowienia in zamowienie.pozycje:
+            try:
+                pozycja_magazynowa = magazyn.znajdz_pozycje_towaru(
+                    pozycja_zamowienia.towar.id_towaru
+                )
+            except ValueError:
+                return False
+
+            if pozycja_zamowienia.ilosc > pozycja_magazynowa.dostepna_ilosc():
+                return False
+
+           for pozycja_zamowienia in zamowienie.pozycje:
+            pozycja_magazynowa = magazyn.znajdz_pozycje_towaru(
+                pozycja_zamowienia.towar.id_towaru
+            )
+            pozycja_magazynowa.zarezerwuj(pozycja_zamowienia.ilosc)
+
+           zamowienie.oznacz_skompletowane()
+           return True
 
     def wystaw_fakture(self, zamowienie: Zamowienie) -> Faktura:
         pass

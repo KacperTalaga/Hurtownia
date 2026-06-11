@@ -104,7 +104,8 @@ class InterfejsKonsolowy:
         """Wyświetla menu dostępne dla pracownika obsługi."""
         opcje: Opcje = {
             "1": ("Przeglądaj zamówienia", self.akcja_przegladanie_zamowien),
-            "2": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
+            "2": ("Kompletuj zamówienie", self.akcja_kompletowanie_zamowienia),
+            "3": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
             "0": ("Wyloguj się", self.system.wylogowanie),
         }
         self.wyswietl_menu(self._nazwa_zalogowanego(), opcje)
@@ -333,6 +334,44 @@ class InterfejsKonsolowy:
 
         print(f"  Zamówienie nr {zamowienie.numer}: {zamowienie.status.value}")
 
+
+    def akcja_kompletowanie_zamowienia(self) -> None:
+        """Obsługuje kompletowanie zamówienia przez pracownika obsługi."""
+        obsluga = self._pobierz_zalogowana_obsluge()
+        if obsluga is None:
+            print("  Tylko pracownik obsługi może kompletować zamówienia.")
+            return
+
+        if self.system.magazyn is None:
+            print("  Brak przypisanego magazynu.")
+            return
+
+        if not self.system.zamowienia:
+            print("  Brak zamówień do kompletowania.")
+            return
+
+        self.akcja_przegladanie_zamowien()
+        numer = self._pobierz_int("  Numer zamówienia do skompletowania: ")
+
+        zamowienie = self._znajdz_zamowienie(numer)
+        if zamowienie is None:
+            print("  Nie znaleziono zamówienia o podanym numerze.")
+            return
+
+        if obsluga.kompletuj_zamowienie(zamowienie, self.system.magazyn):
+            print(
+                f"  Zamówienie nr {zamowienie.numer} zostało skompletowane. "
+                f"Status: {zamowienie.status.value}."
+            )
+        else:
+            print(
+                "  Nie udało się skompletować zamówienia. "
+                "Sprawdź status zamówienia lub dostępność towarów."
+            )    
+
+
+
+
     def akcja_raport_stanu_magazynu(self) -> None:
         """Wyświetla raport stanu magazynu."""
         print("\n  --- Raport stanu magazynu ---")
@@ -520,6 +559,7 @@ class InterfejsKonsolowy:
                 f"cena netto: {pozycja.cena_jednostkowa:.2f} zł | "
                 f"wartość brutto: {pozycja.wartosc_brutto():.2f} zł"
             )
+
 
     def _zakoncz(self) -> None:
         """Sygnalizuje pętli głównej zakończenie pracy aplikacji."""
