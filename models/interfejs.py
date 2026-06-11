@@ -2,9 +2,11 @@ from __future__ import annotations
 from typing import Callable, Dict, Optional, Tuple, TYPE_CHECKING
 
 from models.osoby import Kierownik, Klient, Magazynier, Obsluga
+from models.zamowienia import Zamowienie
 
 if TYPE_CHECKING:
     from models.system import System
+    from models.towar import Towar
 
 Opcje = Dict[str, Tuple[str, Optional[Callable[[], None]]]]
 
@@ -58,6 +60,9 @@ class InterfejsKonsolowy:
         opcje: Opcje = {
             "1": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
             "2": ("Pokaż szczegóły towaru", self.akcja_szczegoly_towaru),
+            "3": ("Złóż zamówienie", self.akcja_zlozenie_zamowienia),
+            "4": ("Moje zamówienia", self.akcja_moje_zamowienia),
+            "5": ("Sprawdź status zamówienia", self.akcja_status_zamowienia),
             "0": ("Wyloguj się", self.system.wylogowanie),
         }
         self.wyswietl_menu(self._nazwa_zalogowanego(), opcje)
@@ -205,8 +210,6 @@ class InterfejsKonsolowy:
 
         print("  Nie znaleziono towaru o podanym ID.")
 
-<<<<<<< Updated upstream
-=======
         
     def akcja_zlozenie_zamowienia(self) -> None:
         """Obsługuje złożenie zamówienia przez zalogowanego klienta."""
@@ -331,6 +334,7 @@ class InterfejsKonsolowy:
 
         print(f"  Zamówienie nr {zamowienie.numer}: {zamowienie.status.value}")
 
+
     def akcja_kompletowanie_zamowienia(self) -> None:
         """Obsługuje kompletowanie zamówienia przez pracownika obsługi."""
         obsluga = self._pobierz_zalogowana_obsluge()
@@ -365,7 +369,9 @@ class InterfejsKonsolowy:
                 "Sprawdź status zamówienia lub dostępność towarów."
             )    
 
->>>>>>> Stashed changes
+
+
+
     def akcja_raport_stanu_magazynu(self) -> None:
         """Wyświetla raport stanu magazynu."""
         print("\n  --- Raport stanu magazynu ---")
@@ -501,8 +507,6 @@ class InterfejsKonsolowy:
         if uzytkownik is None:
             return "Użytkownik"
         return f"{uzytkownik.imie} {uzytkownik.nazwisko}"
-<<<<<<< Updated upstream
-=======
     
     def _pobierz_zalogowanego_klienta(self) -> Optional[Klient]:
         """Zwraca zalogowanego klienta albo None, jeśli zalogowany użytkownik nie jest klientem."""
@@ -555,20 +559,7 @@ class InterfejsKonsolowy:
                 f"cena netto: {pozycja.cena_jednostkowa:.2f} zł | "
                 f"wartość brutto: {pozycja.wartosc_brutto():.2f} zł"
             )
-    def _pobierz_zalogowana_obsluge(self) -> Optional[Obsluga]:
-        """Zwraca zalogowanego pracownika obsługi albo None."""
-        uzytkownik = self.system.zalogowany_uzytkownik
-        if isinstance(uzytkownik, Obsluga):
-            return uzytkownik
-        return None
 
-    def _znajdz_zamowienie(self, numer: int) -> Optional[Zamowienie]:
-        """Wyszukuje zamówienie po numerze na liście zamówień systemu."""
-        for zamowienie in self.system.zamowienia:
-            if zamowienie.numer == numer:
-                return zamowienie
-        return None
->>>>>>> Stashed changes
 
     def _zakoncz(self) -> None:
         """Sygnalizuje pętli głównej zakończenie pracy aplikacji."""
