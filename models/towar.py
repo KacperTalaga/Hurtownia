@@ -23,14 +23,20 @@ class Towar(ABC):
         self.jednostka = jednostka
 
     def cena_brutto(self) -> float:
-        pass
+        """Oblicza cenę brutto towaru."""
+        return self.cena_netto * (1 + self.stawka_vat / 100)
 
     @abstractmethod
     def opis_techniczny(self) -> str:
         pass
 
     def aktualizuj_cene(self, nowa_cena: float) -> None:
-        pass
+        """Aktualizuje cenę netto towaru."""
+        if nowa_cena < 0:
+            raise ValueError("Cena netto nie może być ujemna.")
+
+        self.cena_netto = nowa_cena
+        
 
 
 class MaterialPlytowy(Towar):
