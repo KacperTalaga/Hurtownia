@@ -9,6 +9,7 @@ from models.towar import (
     MaterialPlytowy,
     MaterialSypki,
 )
+from models.zamowienia import Zamowienie
 
 if TYPE_CHECKING:
     from models.osoby import Osoba
@@ -98,7 +99,24 @@ class DaneStartowe:
 
         return magazyn
 
-    
+    @staticmethod
+    def utworz_zamowienia_startowe() -> List[Zamowienie]:
+        """Tworzy przykładowe zamówienia startowe.
+
+        Metoda jest przygotowana dla modułu zamówień, faktur i menu
+        terminalowego. Zamówienia są tworzone obiektowo, bez użycia plików
+        zewnętrznych ani bazy danych.
+
+        Returns:
+            Lista przykładowych zamówień.
+        """
+        towary: List[Towar] = DaneStartowe.utworz_towary_startowe()
+
+        zamowienie: Zamowienie = Zamowienie(1, 1)
+        zamowienie.dodaj_pozycje(towary[0], 10.0)
+        zamowienie.dodaj_pozycje(towary[1], 2.0)
+
+        return [zamowienie]
 
     @staticmethod
     def podlacz_do_systemu(system: System) -> None:
