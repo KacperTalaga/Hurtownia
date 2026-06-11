@@ -61,10 +61,31 @@ class Magazyn:
         self.pozycje: List[PozycjaMagazynowa] = []
 
     def dodaj_towar(self, towar: Towar, ilosc: float, stan_min: float) -> None:
-        pass
+        """Dodaje nowy towar do magazynu.
+
+        ValueError: Gdy towar o tym samym identyfikatorze już istnieje
+            albo gdy ilość lub stan minimalny są niepoprawne.
+        """
+        if ilosc < 0:
+            raise ValueError("Ilość towaru nie może być ujemna.")
+
+        if stan_min < 0:
+            raise ValueError("Stan minimalny nie może być ujemny.")
+
+        for pozycja in self.pozycje:
+            if pozycja.towar.id_towaru == towar.id_towaru:
+                raise ValueError("Towar o podanym identyfikatorze już istnieje w magazynie.")
+
+        self.pozycje.append(PozycjaMagazynowa(towar, ilosc, stan_min))
 
     def znajdz_pozycje_towaru(self, id: int) -> PozycjaMagazynowa:
-        pass
+        """Wyszukuje pozycję magazynową po identyfikatorze towaru."""
+        for pozycja in self.pozycje:
+            if pozycja.towar.id_towaru == id:
+                return pozycja
+
+        raise ValueError("Nie znaleziono towaru o podanym identyfikatorze.")
 
     def towary_ponizej_minimum(self) -> List[PozycjaMagazynowa]:
-        pass
+        """Zwraca listę pozycji magazynowych poniżej stanu minimalnego."""
+        return [pozycja for pozycja in self.pozycje if pozycja.czy_ponizej_min()]
