@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Callable, Dict, Optional, Tuple
 
 from models.system import System
+from models.osoby import Kierownik
 
 Opcje = Dict[str, Tuple[str, Optional[Callable[[], None]]]]
 
@@ -38,9 +39,10 @@ class InterfejsKonsolowy:
         """Pętla menu dla zalogowanego użytkownika."""
         while self.system.zalogowany_uzytkownik is not None:
             u = self.system.zalogowany_uzytkownik
-            opcje: Opcje = {
-                "0": ("Wyloguj się", self.system.wylogowanie),
-            }
+            opcje: Opcje = {}
+            if isinstance(u, Kierownik):
+                opcje["1"] = ("Zarejestruj pracownika", self.akcja_rejestracja_pracownika)
+            opcje["0"] = ("Wyloguj się", self.system.wylogowanie)
             self.wyswietl_menu(f"{u.imie} {u.nazwisko}", opcje)
             wybor = self.pobierz_wybor(opcje)
             _, handler = opcje[wybor]
@@ -71,6 +73,28 @@ class InterfejsKonsolowy:
             print("  Rejestracja zakończona pomyślnie — możesz się zalogować.")
         else:
             print("  Login jest już zajęty — wybierz inny.")
+
+    def akcja_rejestracja_pracownika(self) -> None:
+        """Zbiera dane nowego pracownika i deleguje rejestrację do fasady systemu."""
+        print("\n  --- Rejestracja pracownika ---")
+        typy: Opcje = {
+            "1": ("Magazynier", None),
+            "2": ("Obsługa", None),
+            "0": ("Anuluj", None),
+        }
+        self.wyswietl_menu("Typ pracownika", typy)
+        wybor = self.pobierz_wybor(typy)
+        if wybor == "0":
+            return
+        typ = "Magazynier" if wybor == "1" else "Obsluga"
+        imie = input("  Imię: ").strip()
+        nazwisko = input("  Nazwisko: ").strip()
+        login = input("  Login: ").strip()
+        haslo = input("  Hasło: ").strip()
+        if self.system.rejestracja_pracownika(typ, imie, nazwisko, login, haslo):
+            print(f"  Pracownik ({typ}) zarejestrowany pomyślnie.")
+        else:
+            print("  Nie udało się — login zajęty lub nieprawidłowy typ.")
 
     def wyswietl_menu(self, tytul: str, opcje: Opcje) -> None:
         """Wyświetla nagłówek menu i ponumerowane opcje."""
