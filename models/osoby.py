@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
-    from models.system import System
     from models.magazyn import Magazyn
     from models.towar import Towar
     from models.zamowienia import Zamowienie
@@ -45,9 +44,6 @@ class Klient(Osoba):
 class Kierownik(Pracownik):
     def __init__(self, imie: str, nazwisko: str, login: str, haslo: str):
         super().__init__(imie, nazwisko, login, haslo)
-
-    def zarejerstruj_pracownika(self, system: System, pracownik: Pracownik) -> None:
-        pass
 
     def inwentaryzacja(self, magazyn: Magazyn) -> None:
         pass
