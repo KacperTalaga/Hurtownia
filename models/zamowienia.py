@@ -115,6 +115,14 @@ class Zamowienie:
 
         self.status = StatusZamowienia.ANULOWANE
 
+    def oznacz_skompletowane(self) -> None:
+        """Oznacza zamówienie jako skompletowane."""
+
+        if self.status != StatusZamowienia.W_REALIZACJI:
+            raise ValueError("Tylko zamówienie w realizacji może zostać skompletowane.")
+
+        self.status = StatusZamowienia.SKOMPLETOWANE
+
     def oznacz_zrealizowane(self) -> None:
         """Oznacza zamówienie jako zrealizowane."""
 

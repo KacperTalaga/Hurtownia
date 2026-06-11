@@ -99,7 +99,8 @@ class InterfejsKonsolowy:
         """Wyświetla menu dostępne dla pracownika obsługi."""
         opcje: Opcje = {
             "1": ("Przeglądaj zamówienia", self.akcja_przegladanie_zamowien),
-            "2": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
+            "2": ("Kompletuj zamówienie", self.akcja_kompletowanie_zamowienia),
+            "3": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
             "0": ("Wyloguj się", self.system.wylogowanie),
         }
         self.wyswietl_menu(self._nazwa_zalogowanego(), opcje)
@@ -204,6 +205,167 @@ class InterfejsKonsolowy:
 
         print("  Nie znaleziono towaru o podanym ID.")
 
+<<<<<<< Updated upstream
+=======
+        
+    def akcja_zlozenie_zamowienia(self) -> None:
+        """Obsługuje złożenie zamówienia przez zalogowanego klienta."""
+        klient = self._pobierz_zalogowanego_klienta()
+        if klient is None:
+            print("  Tylko klient może złożyć zamówienie.")
+            return
+
+        if not self.system.towary:
+            print("  Brak towarów w ofercie.")
+            return
+
+        zamowienie = Zamowienie(
+            self._nastepny_numer_zamowienia(),
+            self._nastepne_id_zamowienia(),
+        )
+
+        print("\n  --- Nowe zamówienie ---")
+
+        while True:
+            self.akcja_przegladanie_oferty()
+            id_towaru = self._pobierz_int("  ID towaru (0 - zakończ dodawanie): ")
+
+            if id_towaru == 0:
+                break
+
+            towar = self._znajdz_towar(id_towaru)
+            if towar is None:
+                print("  Nie znaleziono towaru o podanym ID.")
+                continue
+
+            ilosc = self._pobierz_float("  Ilość: ")
+
+            try:
+                zamowienie.dodaj_pozycje(towar, ilosc)
+                print(f"  Dodano pozycję: {towar.nazwa}, ilość: {ilosc:.2f}.")
+            except ValueError as blad:
+                print(f"  Błąd: {blad}")
+                continue
+
+            opcje: Opcje = {
+                "1": ("Dodaj kolejny towar", None),
+                "2": ("Zatwierdź zamówienie", None),
+                "0": ("Anuluj zamówienie", None),
+            }
+            self.wyswietl_menu("Co dalej?", opcje)
+            wybor = self.pobierz_wybor(opcje)
+
+            if wybor == "1":
+                continue
+            if wybor == "2":
+                break
+            if wybor == "0":
+                print("  Zamówienie anulowane.")
+                return
+
+        if not zamowienie.pozycje:
+            print("  Nie dodano żadnych pozycji — zamówienie nie zostało utworzone.")
+            return
+
+        self._wyswietl_zamowienie(zamowienie)
+
+        opcje_potwierdzenia: Opcje = {
+            "1": ("Potwierdź zamówienie", None),
+            "0": ("Anuluj zamówienie", None),
+        }
+        self.wyswietl_menu("Potwierdzenie", opcje_potwierdzenia)
+        wybor = self.pobierz_wybor(opcje_potwierdzenia)
+
+        if wybor == "0":
+            print("  Zamówienie anulowane.")
+            return
+
+        try:
+            zamowienie.zatwierdz()
+        except ValueError as blad:
+            print(f"  Błąd: {blad}")
+            return
+
+        self.system.zamowienia.append(zamowienie)
+        klient.zamowienia.append(zamowienie)
+
+        print(
+            f"  Zamówienie nr {zamowienie.numer} zostało złożone. "
+            f"Status: {zamowienie.status.value}."
+        )
+
+
+    def akcja_moje_zamowienia(self) -> None:
+        """Wyświetla zamówienia zalogowanego klienta."""
+        klient = self._pobierz_zalogowanego_klienta()
+        if klient is None:
+            print("  Tylko klient może przeglądać swoje zamówienia.")
+            return
+
+        print("\n  --- Moje zamówienia ---")
+
+        if not klient.zamowienia:
+            print("  Nie masz jeszcze żadnych zamówień.")
+            return
+
+        for zamowienie in klient.zamowienia:
+            self._wyswietl_zamowienie(zamowienie)
+
+    def akcja_status_zamowienia(self) -> None:
+        """Wyświetla status zamówienia zalogowanego klienta."""
+        klient = self._pobierz_zalogowanego_klienta()
+        if klient is None:
+            print("  Tylko klient może sprawdzić status swojego zamówienia.")
+            return
+
+        if not klient.zamowienia:
+            print("  Nie masz jeszcze żadnych zamówień.")
+            return
+
+        numer = self._pobierz_int("  Numer zamówienia: ")
+        zamowienie = self._znajdz_zamowienie_klienta(klient, numer)
+
+        if zamowienie is None:
+            print("  Nie znaleziono zamówienia o podanym numerze.")
+            return
+
+        print(f"  Zamówienie nr {zamowienie.numer}: {zamowienie.status.value}")
+
+    def akcja_kompletowanie_zamowienia(self) -> None:
+        """Obsługuje kompletowanie zamówienia przez pracownika obsługi."""
+        obsluga = self._pobierz_zalogowana_obsluge()
+        if obsluga is None:
+            print("  Tylko pracownik obsługi może kompletować zamówienia.")
+            return
+
+        if self.system.magazyn is None:
+            print("  Brak przypisanego magazynu.")
+            return
+
+        if not self.system.zamowienia:
+            print("  Brak zamówień do kompletowania.")
+            return
+
+        self.akcja_przegladanie_zamowien()
+        numer = self._pobierz_int("  Numer zamówienia do skompletowania: ")
+
+        zamowienie = self._znajdz_zamowienie(numer)
+        if zamowienie is None:
+            print("  Nie znaleziono zamówienia o podanym numerze.")
+            return
+
+        if obsluga.kompletuj_zamowienie(zamowienie, self.system.magazyn):
+            print(
+                f"  Zamówienie nr {zamowienie.numer} zostało skompletowane. "
+                f"Status: {zamowienie.status.value}."
+            )
+        else:
+            print(
+                "  Nie udało się skompletować zamówienia. "
+                "Sprawdź status zamówienia lub dostępność towarów."
+            )    
+
+>>>>>>> Stashed changes
     def akcja_raport_stanu_magazynu(self) -> None:
         """Wyświetla raport stanu magazynu."""
         print("\n  --- Raport stanu magazynu ---")
@@ -339,6 +501,74 @@ class InterfejsKonsolowy:
         if uzytkownik is None:
             return "Użytkownik"
         return f"{uzytkownik.imie} {uzytkownik.nazwisko}"
+<<<<<<< Updated upstream
+=======
+    
+    def _pobierz_zalogowanego_klienta(self) -> Optional[Klient]:
+        """Zwraca zalogowanego klienta albo None, jeśli zalogowany użytkownik nie jest klientem."""
+        uzytkownik = self.system.zalogowany_uzytkownik
+        if isinstance(uzytkownik, Klient):
+            return uzytkownik
+        return None
+    
+    def _znajdz_towar(self, id_towaru: int) -> Optional[Towar]:
+        """Wyszukuje towar po identyfikatorze."""
+        for towar in self.system.towary:
+            if towar.id_towaru == id_towaru:
+                return towar
+        return None
+    
+    def _nastepny_numer_zamowienia(self) -> int:
+        """Wyznacza kolejny numer zamówienia na podstawie listy zamówień systemu."""
+        if not self.system.zamowienia:
+            return 1
+        return max(zamowienie.numer for zamowienie in self.system.zamowienia) + 1
+
+    def _nastepne_id_zamowienia(self) -> int:
+        """Wyznacza kolejne ID zamówienia na podstawie listy zamówień systemu."""
+        if not self.system.zamowienia:
+            return 1
+        return max(zamowienie.id for zamowienie in self.system.zamowienia) + 1
+    
+    def _znajdz_zamowienie_klienta(self, klient: Klient, numer: int) -> Optional[Zamowienie]:
+        """Wyszukuje zamówienie klienta po numerze."""
+        for zamowienie in klient.zamowienia:
+            if zamowienie.numer == numer:
+                return zamowienie
+        return None
+
+    def _wyswietl_zamowienie(self, zamowienie: Zamowienie) -> None:
+        """Wyświetla szczegóły zamówienia wraz z pozycjami."""
+        print(
+            f"\n  Zamówienie nr {zamowienie.numer} | "
+            f"ID: {zamowienie.id} | "
+            f"status: {zamowienie.status.value} | "
+            f"pozycji: {zamowienie.liczba_pozycji()} | "
+            f"netto: {zamowienie.wartosc_netto():.2f} zł | "
+            f"brutto: {zamowienie.wartosc_brutto():.2f} zł"
+        )
+
+        for indeks, pozycja in enumerate(zamowienie.pozycje, start=1):
+            print(
+                f"    {indeks}. {pozycja.towar.nazwa} | "
+                f"ilość: {pozycja.ilosc:.2f} | "
+                f"cena netto: {pozycja.cena_jednostkowa:.2f} zł | "
+                f"wartość brutto: {pozycja.wartosc_brutto():.2f} zł"
+            )
+    def _pobierz_zalogowana_obsluge(self) -> Optional[Obsluga]:
+        """Zwraca zalogowanego pracownika obsługi albo None."""
+        uzytkownik = self.system.zalogowany_uzytkownik
+        if isinstance(uzytkownik, Obsluga):
+            return uzytkownik
+        return None
+
+    def _znajdz_zamowienie(self, numer: int) -> Optional[Zamowienie]:
+        """Wyszukuje zamówienie po numerze na liście zamówień systemu."""
+        for zamowienie in self.system.zamowienia:
+            if zamowienie.numer == numer:
+                return zamowienie
+        return None
+>>>>>>> Stashed changes
 
     def _zakoncz(self) -> None:
         """Sygnalizuje pętli głównej zakończenie pracy aplikacji."""
