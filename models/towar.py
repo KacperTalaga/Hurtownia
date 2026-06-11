@@ -23,14 +23,20 @@ class Towar(ABC):
         self.jednostka = jednostka
 
     def cena_brutto(self) -> float:
-        pass
+        """Oblicza cenę brutto towaru."""
+        return self.cena_netto * (1 + self.stawka_vat / 100)
 
     @abstractmethod
     def opis_techniczny(self) -> str:
         pass
 
     def aktualizuj_cene(self, nowa_cena: float) -> None:
-        pass
+        """Aktualizuje cenę netto towaru."""
+        if nowa_cena < 0:
+            raise ValueError("Cena netto nie może być ujemna.")
+
+        self.cena_netto = nowa_cena
+        
 
 
 class MaterialPlytowy(Towar):
@@ -41,7 +47,12 @@ class MaterialPlytowy(Towar):
         self.szerokosc = szerokosc
 
     def opis_techniczny(self) -> str:
-        pass
+        """Zwraca opis techniczny materiału płytowego."""
+        return (
+            f"Materiał płytowy: grubość {self.grubosc}, "
+            f"długość {self.dlugosc}, szerokość {self.szerokosc}."
+        )
+        
 
 
 class MaterialSypki(Towar):
@@ -51,7 +62,16 @@ class MaterialSypki(Towar):
         self.workowany = workowany
 
     def opis_techniczny(self) -> str:
-        pass
+        """Zwraca opis techniczny materiału sypkiego."""
+        if self.workowany:
+            sposob_pakowania: str = "workowany"
+        else:
+            sposob_pakowania = "luzem"
+
+        return (
+            f"Materiał sypki: gęstość {self.gestosc}, "
+            f"sposób pakowania: {sposob_pakowania}."
+        )
 
 
 class MaterialDluzycowy(Towar):
@@ -61,4 +81,8 @@ class MaterialDluzycowy(Towar):
         self.przekroj = przekroj
 
     def opis_techniczny(self) -> str:
-        pass
+        """Zwraca opis techniczny materiału dłużycowego."""
+        return (
+            f"Materiał dłużycowy: długość {self.dlugosc}, "
+            f"przekrój {self.przekroj}."
+        )
