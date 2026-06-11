@@ -560,6 +560,20 @@ class InterfejsKonsolowy:
                 f"wartość brutto: {pozycja.wartosc_brutto():.2f} zł"
             )
 
+    def _pobierz_zalogowana_obsluge(self) -> Optional[Obsluga]:
+        """Zwraca zalogowanego pracownika obsługi albo None."""
+        uzytkownik = self.system.zalogowany_uzytkownik
+        if isinstance(uzytkownik, Obsluga):
+            return uzytkownik
+        return None
+
+    def _znajdz_zamowienie(self, numer: int) -> Optional[Zamowienie]:
+        """Wyszukuje zamówienie po numerze na liście zamówień systemu."""
+        for zamowienie in self.system.zamowienia:
+            if zamowienie.numer == numer:
+                return zamowienie
+        return None
+
 
     def _zakoncz(self) -> None:
         """Sygnalizuje pętli głównej zakończenie pracy aplikacji."""
