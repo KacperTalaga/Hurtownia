@@ -289,18 +289,18 @@ class InterfejsKonsolowy:
             return
 
         try:
-            zamowienie.zatwierdz()
+            zamowienie = klient.zloz_zamowienie(zamowienie)
         except ValueError as blad:
             print(f"  Błąd: {blad}")
             return
 
         self.system.zamowienia.append(zamowienie)
-        klient.zamowienia.append(zamowienie)
 
         print(
             f"  Zamówienie nr {zamowienie.numer} zostało złożone. "
             f"Status: {zamowienie.status.value}."
         )
+
 
     def akcja_moje_zamowienia(self) -> None:
         """Wyświetla zamówienia zalogowanego klienta."""
@@ -484,21 +484,28 @@ class InterfejsKonsolowy:
 
 
     def akcja_raport_stanu_magazynu(self) -> None:
-        """Wyświetla raport stanu magazynu."""
+        """Wyświetla raport stanu magazynu dla kierownika."""
         print("\n  --- Raport stanu magazynu ---")
 
         if self.system.magazyn is None:
             print("  Brak przypisanego magazynu.")
             return
 
+        kierownik = self.system.zalogowany_uzytkownik
+        if not isinstance(kierownik, Kierownik):
+            print("  Tylko kierownik może wyświetlić raport stanu magazynu.")
+            return
+
+        pozycje = kierownik.raport_stanu_magazynu(self.system.magazyn)
+
         print(f"  Magazyn: {self.system.magazyn.nazwa}")
         print(f"  Adres: {self.system.magazyn.adres}")
 
-        if not self.system.magazyn.pozycje:
+        if not pozycje:
             print("  Brak pozycji magazynowych.")
             return
 
-        for pozycja in self.system.magazyn.pozycje:
+        for pozycja in pozycje:
             print(
                 f"  [{pozycja.towar.id_towaru}] {pozycja.towar.nazwa} | "
                 f"stan: {pozycja.ilosc:.2f} | "
@@ -530,7 +537,32 @@ class InterfejsKonsolowy:
 
     def akcja_przegladanie_magazynu(self) -> None:
         """Wyświetla aktualny stan magazynu dla magazyniera."""
-        self.akcja_raport_stanu_magazynu()
+        print("\n  --- Przegląd magazynu ---")
+
+        if self.system.magazyn is None:
+            print("  Brak przypisanego magazynu.")
+            return
+
+        magazynier = self.system.zalogowany_uzytkownik
+        if not isinstance(magazynier, Magazynier):
+            print("  Tylko magazynier może przeglądać magazyn.")
+            return
+
+        print(f"  Magazyn: {self.system.magazyn.nazwa}")
+        print(f"  Adres: {self.system.magazyn.adres}")
+
+        if not self.system.magazyn.pozycje:
+            print("  Brak pozycji magazynowych.")
+            return
+
+        for pozycja in self.system.magazyn.pozycje:
+            print(
+                f"  [{pozycja.towar.id_towaru}] {pozycja.towar.nazwa} | "
+                f"stan: {pozycja.ilosc:.2f} | "
+                f"zarezerwowane: {pozycja.zarezerowane:.2f} | "
+                f"dostępne: {pozycja.dostepna_ilosc():.2f} | "
+                f"minimum: {pozycja.stan_min:.2f}"
+            )
 
     def akcja_przyjecie_dostawy(self) -> None:
         """Obsługuje przyjęcie dostawy istniejącego towaru do magazynu."""

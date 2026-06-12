@@ -5,59 +5,78 @@ from models.faktury import Faktura
 from models.zamowienia import StatusZamowienia
 
 if TYPE_CHECKING:
-    from models.magazyn import Magazyn
+    from models.magazyn import Magazyn, PozycjaMagazynowa
     from models.towar import Towar
     from models.zamowienia import Zamowienie
     
 
 
 class Osoba:
-    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str):
-        self.imie = imie
-        self.nazwisko = nazwisko
-        self.login = login
-        self.__haslo = haslo
+    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str) -> None:
+        self.imie: str = imie
+        self.nazwisko: str = nazwisko
+        self.login: str = login
+        self.__haslo: str = haslo
 
     def sprawdz_haslo(self, haslo: str) -> bool:
         return self.__haslo == haslo
 
 
 class Pracownik(Osoba):
-    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str):
+    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str) -> None:
         super().__init__(imie, nazwisko, login, haslo)
 
 
 class Klient(Osoba):
-    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str, adres: str, saldo: float = 0.0):
+    """Klient hurtowni, który może składać zamówienia i przeglądać ich historię."""
+
+    def __init__(self, imie: str, nazwisko: str, login: str,haslo: str,adres: str,saldo: float = 0.0,) -> None:
+        """Tworzy klienta hurtowni. """
+
         super().__init__(imie, nazwisko, login, haslo)
-        self.adres = adres
-        self.saldo = saldo
+        self.adres: str = adres
+        self.saldo: float = saldo
         self.zamowienia: List[Zamowienie] = []
 
-    def zloz_zamowienie(self) -> Zamowienie:
-        pass
+    def zloz_zamowienie(self, zamowienie: Zamowienie) -> Zamowienie:
+        """Zatwierdza zamówienie i dodaje je do historii klienta."""
+
+        if zamowienie in self.zamowienia:
+            raise ValueError("Zamówienie znajduje się już w historii klienta.")
+
+        zamowienie.zatwierdz()
+        self.zamowienia.append(zamowienie)
+
+        return zamowienie
 
     def historia_zamowien(self) -> List[Zamowienie]:
         """Zwraca listę zamówień złożonych przez klienta."""
+
         return self.zamowienia
 
     def aktualizuj_saldo(self, kwota: float) -> None:
-        pass
+        """Aktualizuje saldo klienta o wskazaną kwotę. """
+
+        self.saldo = round(self.saldo + kwota, 2)
+
 
 
 class Kierownik(Pracownik):
-    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str):
+    """Pracownik zarządzający raportami magazynowymi."""
+
+    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str) -> None:
+        """Tworzy kierownika."""
+
         super().__init__(imie, nazwisko, login, haslo)
 
-    def inwentaryzacja(self, magazyn: Magazyn) -> None:
-        pass
+    def raport_stanu_magazynu(self, magazyn: Magazyn) -> List[PozycjaMagazynowa]:
+        """Zwraca pozycje magazynowe do raportu stanu magazynu."""
 
-    def raport_stanu_magazynu(self, magazyn: Magazyn) -> None:
-        pass
+        return list(magazyn.pozycje)
 
 
 class Magazynier(Pracownik):
-    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str):
+    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str) -> None:
         super().__init__(imie, nazwisko, login, haslo)
 
     def przyjmij_dostawe(self, magazyn: Magazyn, towar: Towar, ilosc: float) -> None:
@@ -69,22 +88,23 @@ class Magazynier(Pracownik):
         pozycja.przyjmij(ilosc)
 
     def wprowadz_nowy_towar(self, magazyn: Magazyn, towar: Towar) -> None:
+        """Szkielet metody wprowadzania nowego towaru do magazynu."""
         pass
 
 
 class Obsluga(Pracownik):
-    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str):
+    def __init__(self, imie: str, nazwisko: str, login: str, haslo: str) -> None:
         super().__init__(imie, nazwisko, login, haslo)
 
     def kompletuj_zamowienie(self, zamowienie: Zamowienie, magazyn: Magazyn) -> bool:
-           """Kompletuje zamówienie przez rezerwację wymaganych towarów w magazynie."""
-           if zamowienie.status != StatusZamowienia.W_REALIZACJI:
+        """Kompletuje zamówienie przez rezerwację wymaganych towarów w magazynie."""
+        if zamowienie.status != StatusZamowienia.W_REALIZACJI:
             return False
 
-           if not zamowienie.pozycje:
+        if not zamowienie.pozycje:
             return False
 
-           for pozycja_zamowienia in zamowienie.pozycje:
+        for pozycja_zamowienia in zamowienie.pozycje:
             try:
                 pozycja_magazynowa = magazyn.znajdz_pozycje_towaru(
                     pozycja_zamowienia.towar.id_towaru
@@ -95,27 +115,25 @@ class Obsluga(Pracownik):
             if pozycja_zamowienia.ilosc > pozycja_magazynowa.dostepna_ilosc():
                 return False
 
-           for pozycja_zamowienia in zamowienie.pozycje:
+        for pozycja_zamowienia in zamowienie.pozycje:
             pozycja_magazynowa = magazyn.znajdz_pozycje_towaru(
                 pozycja_zamowienia.towar.id_towaru
             )
             pozycja_magazynowa.zarezerwuj(pozycja_zamowienia.ilosc)
 
-           zamowienie.oznacz_skompletowane()
-           return True
+        zamowienie.oznacz_skompletowane()
+        return True
 
     def wystaw_fakture(self, zamowienie: Zamowienie, magazyn: Magazyn) -> Faktura:
-        """Wystawia fakturę dla skompletowanego zamówienia i wydaje towar z magazynu.
-
-        Wydanie zdejmuje zarezerwowany przy kompletowaniu towar ze stanu magazynu,
-        a zamówienie zostaje oznaczone jako zrealizowane.
-        """
-
+        """Wystawia fakturę dla skompletowanego zamówienia i wydaje towar z magazynu."""
+        
         if zamowienie.status != StatusZamowienia.SKOMPLETOWANE:
             raise ValueError("Fakturę można wystawić tylko dla skompletowanego zamówienia.")
 
         for pozycja_zamowienia in zamowienie.pozycje:
-            pozycja_magazynowa = magazyn.znajdz_pozycje_towaru(pozycja_zamowienia.towar.id_towaru)
+            pozycja_magazynowa = magazyn.znajdz_pozycje_towaru(
+                pozycja_zamowienia.towar.id_towaru
+            )
             pozycja_magazynowa.wydaj(pozycja_zamowienia.ilosc)
 
         numer_faktury = f"FV/{zamowienie.numer}"
