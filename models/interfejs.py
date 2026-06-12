@@ -65,6 +65,7 @@ class InterfejsKonsolowy:
             "4": ("Moje zamówienia", self.akcja_moje_zamowienia),
             "5": ("Sprawdź status zamówienia", self.akcja_status_zamowienia),
             "6": ("Moje faktury", self.akcja_moje_faktury),
+            "7": ("Opłać fakturę", self.akcja_oplacenie_faktury),
             "0": ("Wyloguj się", self.system.wylogowanie),
         }
         self.wyswietl_menu(self._nazwa_zalogowanego(), opcje)
@@ -316,6 +317,47 @@ class InterfejsKonsolowy:
 
         for zamowienie in klient.zamowienia:
             self._wyswietl_zamowienie(zamowienie)
+
+    def akcja_oplacenie_faktury(self) -> None:
+        """Obsługuje opłacenie faktury przez zalogowanego klienta."""
+        klient = self._pobierz_zalogowanego_klienta()
+        if klient is None:
+            print("  Tylko klient może opłacać swoje faktury.")
+            return
+
+        faktury = self._faktury_klienta(klient)
+        if not faktury:
+            print("  Brak faktur do opłacenia.")
+            return
+
+        print("\n  --- Moje faktury ---")
+        for faktura in faktury:
+            self._wyswietl_fakture(faktura)
+
+        numer_zamowienia = self._pobierz_int(
+            "  Podaj numer zamówienia z faktury do opłacenia: "
+        )
+
+        faktura = self._znajdz_fakture_klienta_po_numerze_zamowienia(
+            klient, numer_zamowienia
+        )
+        if faktura is None:
+            print("  Nie znaleziono faktury dla podanego zamówienia.")
+            return
+
+        kwota = self._pobierz_float("  Kwota płatności: ")
+        if kwota <= 0:
+            print("  Kwota płatności musi być większa od zera.")
+            return
+
+        try:
+            faktura.zaplac(kwota)
+        except ValueError as blad:
+            print(f"  Nie udało się opłacić faktury: {blad}")
+            return
+
+        print("  Płatność została zarejestrowana.")
+        self._wyswietl_fakture(faktura)
 
 
     def akcja_moje_faktury(self) -> None:
@@ -668,6 +710,15 @@ class InterfejsKonsolowy:
         print(f"  Kwota zapłacona: {faktura.kwota_zaplacona:.2f} zł")
         print(f"  Do zapłaty: {faktura.kwota_do_zaplaty():.2f} zł")
         print(f"  Status płatności: {faktura.status.value}")
+
+    def _znajdz_fakture_klienta_po_numerze_zamowienia(
+        self, klient: Klient, numer_zamowienia: int
+    ) -> Optional[Faktura]:
+        """Wyszukuje fakturę klienta po numerze powiązanego zamówienia."""
+        for faktura in self._faktury_klienta(klient):
+            if faktura.zamowienie.numer == numer_zamowienia:
+                return faktura
+        return None
 
         
 
