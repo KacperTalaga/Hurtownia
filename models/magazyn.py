@@ -89,3 +89,7 @@ class Magazyn:
     def towary_ponizej_minimum(self) -> List[PozycjaMagazynowa]:
         """Zwraca listę pozycji magazynowych poniżej stanu minimalnego."""
         return [pozycja for pozycja in self.pozycje if pozycja.czy_ponizej_min()]
+
+    def wartosc_zapasow(self) -> float:
+        """Zwraca łączną wartość brutto wszystkich towarów na stanie magazynu."""
+        return sum(pozycja.towar.cena_brutto() * pozycja.ilosc for pozycja in self.pozycje)

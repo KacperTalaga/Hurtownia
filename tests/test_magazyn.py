@@ -72,6 +72,21 @@ class TestMagazyn(unittest.TestCase):
         with self.assertRaises(ValueError):
             magazyn.dodaj_towar(towar, 5.0, 1.0)
 
+    def test_wartosc_zapasow_sumuje_wartosc_brutto(self) -> None:
+        """Wartość zapasów to suma wartości brutto wszystkich pozycji na stanie."""
+        magazyn = Magazyn("Magazyn główny", "Kraków")
+        magazyn.dodaj_towar(self.utworz_towar(1), 10.0, 2.0)
+        magazyn.dodaj_towar(self.utworz_towar(2), 5.0, 2.0)
+
+        # cena_brutto = 100 * 1.23 = 123; 123*10 + 123*5 = 1845
+        self.assertEqual(magazyn.wartosc_zapasow(), 1845.0)
+
+    def test_wartosc_zapasow_pustego_magazynu(self) -> None:
+        """Pusty magazyn ma zerową wartość zapasów."""
+        magazyn = Magazyn("Magazyn główny", "Kraków")
+
+        self.assertEqual(magazyn.wartosc_zapasow(), 0.0)
+
     def test_towary_ponizej_minimum(self) -> None:
         """Magazyn zwraca tylko pozycje poniżej stanu minimalnego."""
         magazyn = Magazyn("Magazyn główny", "Kraków")
