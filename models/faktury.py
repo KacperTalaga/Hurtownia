@@ -30,23 +30,25 @@ class Faktura:
 
     def kwota_do_zaplaty(self) -> float:
         """Zwraca pozostałą kwotę brutto do zapłaty."""
-        return self.zamowienie.wartosc_brutto() - self.kwota_zaplacona
+        return round(self.zamowienie.wartosc_brutto() - self.kwota_zaplacona, 2)
 
     def zaplac(self, kwota: float) -> None:
         """Rejestruje wpłatę dla faktury i aktualizuje status płatności."""
+        kwota = round(kwota, 2)
+        kwota_do_zaplaty = self.kwota_do_zaplaty()
 
         if kwota <= 0:
             raise ValueError("Kwota wpłaty musi być dodatnia.")
 
-        if kwota > self.kwota_do_zaplaty():
+        if kwota > kwota_do_zaplaty:
             raise ValueError("Kwota wpłaty nie może przekraczać kwoty do zapłaty.")
 
-        self.kwota_zaplacona += kwota
+        self.kwota_zaplacona = round(self.kwota_zaplacona + kwota, 2)
         self._aktualizuj_status()
 
     def _aktualizuj_status(self) -> None:
         """Aktualizuje status płatności na podstawie wpłaconej kwoty."""
-        wartosc_faktury = self.zamowienie.wartosc_brutto()
+        wartosc_faktury = round(self.zamowienie.wartosc_brutto(), 2)
 
         if self.kwota_zaplacona == 0:
             self.status = StatusPlatnosci.NIEZAPLACONA
