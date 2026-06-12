@@ -1,13 +1,14 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, List
 
+from models.faktury import Faktura
 from models.zamowienia import StatusZamowienia
 
 if TYPE_CHECKING:
     from models.magazyn import Magazyn
     from models.towar import Towar
     from models.zamowienia import Zamowienie
-    from models.faktury import Faktura
+    
 
 
 class Osoba:
@@ -98,4 +99,14 @@ class Obsluga(Pracownik):
            return True
 
     def wystaw_fakture(self, zamowienie: Zamowienie) -> Faktura:
-        pass
+        """Wystawia fakturę dla skompletowanego zamówienia."""
+
+        if zamowienie.status != StatusZamowienia.SKOMPLETOWANE:
+            raise ValueError("Fakturę można wystawić tylko dla skompletowanego zamówienia.")
+
+        numer_faktury = f"FV/{zamowienie.numer}"
+        faktura = Faktura(numer_faktury, zamowienie.id, zamowienie)
+
+        zamowienie.oznacz_zrealizowane()
+
+        return faktura

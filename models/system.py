@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from models.osoby import Osoba, Pracownik
     from models.towar import Towar
     from models.zamowienia import Zamowienie
+    from models.faktury import Faktura
 
 from models.osoby import Klient, Kierownik, Magazynier, Obsluga
 from models.magazyn import Magazyn
@@ -37,6 +38,7 @@ class System:
             self.towary = []
 
         self.zamowienia: List[Zamowienie] = DaneStartowe.utworz_zamowienia_startowe()
+        self.faktury: List[Faktura] = []
         
         # Konto startowe kierownika — odtwarzane przy starcie, dopóki realny kierownik nie istnieje
         if not any(isinstance(u, Kierownik) for u in self.uzytkownicy):
