@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from models.osoby import Kierownik, Klient, Magazynier, Obsluga
 from models.zamowienia import Zamowienie
@@ -60,10 +60,11 @@ class InterfejsKonsolowy:
         """Wyświetla menu dostępne dla klienta."""
         opcje: Opcje = {
             "1": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
-            "2": ("Pokaż szczegóły towaru", self.akcja_szczegoly_towaru),
+            "2": ("Szczegóły towaru", self.akcja_szczegoly_towaru),
             "3": ("Złóż zamówienie", self.akcja_zlozenie_zamowienia),
             "4": ("Moje zamówienia", self.akcja_moje_zamowienia),
             "5": ("Sprawdź status zamówienia", self.akcja_status_zamowienia),
+            "6": ("Moje faktury", self.akcja_moje_faktury),
             "0": ("Wyloguj się", self.system.wylogowanie),
         }
         self.wyswietl_menu(self._nazwa_zalogowanego(), opcje)
@@ -300,7 +301,6 @@ class InterfejsKonsolowy:
             f"Status: {zamowienie.status.value}."
         )
 
-
     def akcja_moje_zamowienia(self) -> None:
         """Wyświetla zamówienia zalogowanego klienta."""
         klient = self._pobierz_zalogowanego_klienta()
@@ -311,11 +311,29 @@ class InterfejsKonsolowy:
         print("\n  --- Moje zamówienia ---")
 
         if not klient.zamowienia:
-            print("  Nie masz jeszcze żadnych zamówień.")
+            print("  Brak zamówień.")
             return
 
         for zamowienie in klient.zamowienia:
             self._wyswietl_zamowienie(zamowienie)
+
+
+    def akcja_moje_faktury(self) -> None:
+        """Wyświetla faktury wystawione dla zamówień zalogowanego klienta."""
+        klient = self._pobierz_zalogowanego_klienta()
+        if klient is None:
+            print("  Tylko klient może przeglądać swoje faktury.")
+            return
+
+        print("\n  --- Moje faktury ---")
+
+        faktury = self._faktury_klienta(klient)
+        if not faktury:
+            print("  Brak wystawionych faktur.")
+            return
+
+        for faktura in faktury:
+            self._wyswietl_fakture(faktura)
 
     def akcja_status_zamowienia(self) -> None:
         """Wyświetla status zamówienia zalogowanego klienta."""
@@ -626,6 +644,16 @@ class InterfejsKonsolowy:
             if faktura.zamowienie.numer == numer_zamowienia:
                 return faktura
         return None
+    
+    def _faktury_klienta(self, klient: Klient) -> List[Faktura]:
+        """Zwraca faktury wystawione dla zamówień wskazanego klienta."""
+        faktury: List[Faktura] = []
+
+        for faktura in self.system.faktury:
+            if faktura.zamowienie in klient.zamowienia:
+                faktury.append(faktura)
+
+        return faktury
 
     def _wyswietl_fakture(self, faktura: Faktura) -> None:
         """Wyświetla podstawowe dane faktury."""
@@ -640,6 +668,8 @@ class InterfejsKonsolowy:
         print(f"  Kwota zapłacona: {faktura.kwota_zaplacona:.2f} zł")
         print(f"  Do zapłaty: {faktura.kwota_do_zaplaty():.2f} zł")
         print(f"  Status płatności: {faktura.status.value}")
+
+        
 
 
     def _zakoncz(self) -> None:
