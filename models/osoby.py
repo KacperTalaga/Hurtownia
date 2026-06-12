@@ -38,7 +38,8 @@ class Klient(Osoba):
         pass
 
     def historia_zamowien(self) -> List[Zamowienie]:
-        pass
+        """Zwraca listę zamówień złożonych przez klienta."""
+        return self.zamowienia
 
     def aktualizuj_saldo(self, kwota: float) -> None:
         pass
@@ -60,7 +61,12 @@ class Magazynier(Pracownik):
         super().__init__(imie, nazwisko, login, haslo)
 
     def przyjmij_dostawe(self, magazyn: Magazyn, towar: Towar, ilosc: float) -> None:
-        pass
+        """Przyjmuje dostawę towaru, zwiększając jego stan w magazynie.
+
+        ValueError: Gdy towar nie ma pozycji w magazynie albo ilość jest niedodatnia.
+        """
+        pozycja = magazyn.znajdz_pozycje_towaru(towar.id_towaru)
+        pozycja.przyjmij(ilosc)
 
     def wprowadz_nowy_towar(self, magazyn: Magazyn, towar: Towar) -> None:
         pass

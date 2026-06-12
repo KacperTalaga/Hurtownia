@@ -311,11 +311,12 @@ class InterfejsKonsolowy:
 
         print("\n  --- Moje zamówienia ---")
 
-        if not klient.zamowienia:
+        zamowienia = klient.historia_zamowien()
+        if not zamowienia:
             print("  Brak zamówień.")
             return
 
-        for zamowienie in klient.zamowienia:
+        for zamowienie in zamowienia:
             self._wyswietl_zamowienie(zamowienie)
 
     def akcja_oplacenie_faktury(self) -> None:
@@ -539,12 +540,17 @@ class InterfejsKonsolowy:
             print("  Brak przypisanego magazynu.")
             return
 
+        magazynier = self.system.zalogowany_uzytkownik
+        if not isinstance(magazynier, Magazynier):
+            print("  Tylko magazynier może przyjmować dostawy.")
+            return
+
         id_towaru = self._pobierz_int("  ID towaru: ")
         ilosc = self._pobierz_float("  Ilość dostawy: ")
 
         try:
             pozycja = self.system.magazyn.znajdz_pozycje_towaru(id_towaru)
-            pozycja.przyjmij(ilosc)
+            magazynier.przyjmij_dostawe(self.system.magazyn, pozycja.towar, ilosc)
             print(
                 f"  Przyjęto {ilosc:.2f} jednostek towaru "
                 f"{pozycja.towar.nazwa}."
