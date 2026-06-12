@@ -7,6 +7,7 @@ from models.zamowienia import Zamowienie
 if TYPE_CHECKING:
     from models.system import System
     from models.towar import Towar
+    from models.faktury import Faktura
 
 Opcje = Dict[str, Tuple[str, Optional[Callable[[], None]]]]
 
@@ -105,7 +106,9 @@ class InterfejsKonsolowy:
         opcje: Opcje = {
             "1": ("Przeglądaj zamówienia", self.akcja_przegladanie_zamowien),
             "2": ("Kompletuj zamówienie", self.akcja_kompletowanie_zamowienia),
-            "3": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
+            "3": ("Wystaw fakturę", self.akcja_wystawienie_faktury),
+            "4": ("Przeglądaj faktury", self.akcja_przegladanie_faktur),
+            "5": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
             "0": ("Wyloguj się", self.system.wylogowanie),
         }
         self.wyswietl_menu(self._nazwa_zalogowanego(), opcje)
@@ -369,7 +372,50 @@ class InterfejsKonsolowy:
                 "Sprawdź status zamówienia lub dostępność towarów."
             )    
 
+    def akcja_wystawienie_faktury(self) -> None:
+        """Obsługuje wystawienie faktury przez pracownika obsługi."""
+        obsluga = self._pobierz_zalogowana_obsluge()
+        if obsluga is None:
+            print("  Tylko pracownik obsługi może wystawiać faktury.")
+            return
 
+        if not self.system.zamowienia:
+            print("  Brak zamówień.")
+            return
+
+        self.akcja_przegladanie_zamowien()
+        numer = self._pobierz_int("  Numer zamówienia do wystawienia faktury: ")
+
+        zamowienie = self._znajdz_zamowienie(numer)
+        if zamowienie is None:
+            print("  Nie znaleziono zamówienia o podanym numerze.")
+            return
+
+        if self._znajdz_fakture_dla_zamowienia(numer) is not None:
+            print("  Faktura dla tego zamówienia została już wystawiona.")
+            return
+
+        try:
+            faktura = obsluga.wystaw_fakture(zamowienie)
+        except ValueError as blad:
+            print(f"  Nie udało się wystawić faktury: {blad}")
+            return
+
+        self.system.faktury.append(faktura)
+
+        print("  Faktura została wystawiona.")
+        self._wyswietl_fakture(faktura)
+
+    def akcja_przegladanie_faktur(self) -> None:
+        """Wyświetla listę wystawionych faktur."""
+        print("\n  --- Faktury ---")
+
+        if not self.system.faktury:
+            print("  Brak wystawionych faktur.")
+            return
+
+        for faktura in self.system.faktury:
+            self._wyswietl_fakture(faktura)
 
 
     def akcja_raport_stanu_magazynu(self) -> None:
@@ -573,6 +619,27 @@ class InterfejsKonsolowy:
             if zamowienie.numer == numer:
                 return zamowienie
         return None
+    
+    def _znajdz_fakture_dla_zamowienia(self, numer_zamowienia: int) -> Optional[Faktura]:
+        """Wyszukuje fakturę wystawioną dla zamówienia o podanym numerze."""
+        for faktura in self.system.faktury:
+            if faktura.zamowienie.numer == numer_zamowienia:
+                return faktura
+        return None
+
+    def _wyswietl_fakture(self, faktura: Faktura) -> None:
+        """Wyświetla podstawowe dane faktury."""
+        print(
+            f"\n  Faktura {faktura.numer} | "
+            f"ID: {faktura.id} | "
+            f"zamówienie nr: {faktura.zamowienie.numer}"
+        )
+        print(f"  Data wystawienia: {faktura.data_wystawienia.strftime('%Y-%m-%d')}")
+        print(f"  Termin płatności: {faktura.termin_platnosci.strftime('%Y-%m-%d')}")
+        print(f"  Kwota brutto: {faktura.zamowienie.wartosc_brutto():.2f} zł")
+        print(f"  Kwota zapłacona: {faktura.kwota_zaplacona:.2f} zł")
+        print(f"  Do zapłaty: {faktura.kwota_do_zaplaty():.2f} zł")
+        print(f"  Status płatności: {faktura.status.value}")
 
 
     def _zakoncz(self) -> None:
