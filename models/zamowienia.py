@@ -61,14 +61,14 @@ class Zamowienie:
         self.status: StatusZamowienia = StatusZamowienia.NOWE
         self.pozycje: List[PozycjaZamowienia] = []
 
-    def dodaj_pozycje(self, towar: Towar, ilosc: float) -> None:
-        """Dodaje pozycję do zamówienia."""
+    def dodaj_pozycje(self, towar: Towar, ilosc: float, rabat: float = 0.0) -> None:
+        """Dodaje pozycję do zamówienia z opcjonalnym rabatem (0-100%)."""
         if self.status == StatusZamowienia.ANULOWANE:
             raise ValueError("Nie można dodać pozycji do anulowanego zamówienia.")
         if ilosc <= 0:
             raise ValueError("Ilość w pozycji zamówienia musi być dodatnia.")
 
-        pozycja = PozycjaZamowienia(towar, ilosc, towar.cena_netto, 0.0)
+        pozycja = PozycjaZamowienia(towar, ilosc, towar.cena_netto, rabat)
         self.pozycje.append(pozycja)
 
     def usun_pozycje(self, index: int) -> None:

@@ -16,9 +16,15 @@ TYPY_PRACOWNIKOW: Dict[str, Type[Pracownik]] = {
     "Magazynier": Magazynier,
     "Obsluga": Obsluga,
 }
-# Dane konta startowego kierownika, zasiewanego przy pierwszym uruchomieniu
+# Dane kont startowych, zasiewanych przy każdym uruchomieniu (brak persystencji)
 LOGIN_KIEROWNIKA: str = "kierownik"
 HASLO_KIEROWNIKA: str = "kierownik"
+LOGIN_KLIENTA: str = "klient"
+HASLO_KLIENTA: str = "klient"
+LOGIN_OBSLUGI: str = "obsluga"
+HASLO_OBSLUGI: str = "obsluga"
+LOGIN_MAGAZYNIERA: str = "magazynier"
+HASLO_MAGAZYNIERA: str = "magazynier"
 
 
 class System:
@@ -38,8 +44,11 @@ class System:
         self.zamowienia: List[Zamowienie] = DaneStartowe.utworz_zamowienia_startowe()
         self.faktury: List[Faktura] = []
 
-        # Konto startowe kierownika — zasiewane przy każdym uruchomieniu (brak persystencji)
+        # Konta startowe — zasiewane przy każdym uruchomieniu (brak persystencji)
         self._dodaj_uzytkownika(Kierownik("Anna", "Kowalska", LOGIN_KIEROWNIKA, HASLO_KIEROWNIKA))
+        self._dodaj_uzytkownika(Klient("Jan", "Nowak", LOGIN_KLIENTA, HASLO_KLIENTA, "ul. Budowlana 1, Kraków"))
+        self._dodaj_uzytkownika(Obsluga("Piotr", "Wiśniewski", LOGIN_OBSLUGI, HASLO_OBSLUGI))
+        self._dodaj_uzytkownika(Magazynier("Tomasz", "Lewandowski", LOGIN_MAGAZYNIERA, HASLO_MAGAZYNIERA))
 
     def rejestracja_klienta(self, imie: str, nazwisko: str, login: str, haslo: str, adres: str) -> bool:
         """Tworzy i rejestruje nowego klienta.

@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from models.osoby import Kierownik, Klient, Magazynier, Obsluga
+from models.towar import JednostkaMiary, MaterialDluzycowy, MaterialPlytowy, MaterialSypki
 from models.zamowienia import Zamowienie
 
 if TYPE_CHECKING:
@@ -64,8 +65,9 @@ class InterfejsKonsolowy:
             "3": ("Złóż zamówienie", self.akcja_zlozenie_zamowienia),
             "4": ("Moje zamówienia", self.akcja_moje_zamowienia),
             "5": ("Sprawdź status zamówienia", self.akcja_status_zamowienia),
-            "6": ("Moje faktury", self.akcja_moje_faktury),
-            "7": ("Opłać fakturę", self.akcja_oplacenie_faktury),
+            "6": ("Anuluj zamówienie", self.akcja_anulowanie_zamowienia),
+            "7": ("Moje faktury", self.akcja_moje_faktury),
+            "8": ("Opłać fakturę", self.akcja_oplacenie_faktury),
             "0": ("Wyloguj się", self.system.wylogowanie),
         }
         self.wyswietl_menu(self._nazwa_zalogowanego(), opcje)
@@ -80,7 +82,8 @@ class InterfejsKonsolowy:
             "1": ("Zarejestruj pracownika", self.akcja_rejestracja_pracownika),
             "2": ("Raport stanu magazynu", self.akcja_raport_stanu_magazynu),
             "3": ("Towary poniżej minimum", self.akcja_towary_ponizej_minimum),
-            "4": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
+            "4": ("Wartość zapasów", self.akcja_wartosc_zapasow),
+            "5": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
             "0": ("Wyloguj się", self.system.wylogowanie),
         }
         self.wyswietl_menu(self._nazwa_zalogowanego(), opcje)
@@ -94,7 +97,8 @@ class InterfejsKonsolowy:
         opcje: Opcje = {
             "1": ("Przeglądaj magazyn", self.akcja_przegladanie_magazynu),
             "2": ("Przyjmij dostawę", self.akcja_przyjecie_dostawy),
-            "3": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
+            "3": ("Wprowadź nowy towar", self.akcja_wprowadzenie_nowego_towaru),
+            "4": ("Przeglądaj ofertę", self.akcja_przegladanie_oferty),
             "0": ("Wyloguj się", self.system.wylogowanie),
         }
         self.wyswietl_menu(self._nazwa_zalogowanego(), opcje)
@@ -247,10 +251,11 @@ class InterfejsKonsolowy:
                 continue
 
             ilosc = self._pobierz_float("  Ilość: ")
+            rabat = self._pobierz_float("  Rabat % (0-100): ")
 
             try:
-                zamowienie.dodaj_pozycje(towar, ilosc)
-                print(f"  Dodano pozycję: {towar.nazwa}, ilość: {ilosc:.2f}.")
+                zamowienie.dodaj_pozycje(towar, ilosc, rabat)
+                print(f"  Dodano pozycję: {towar.nazwa}, ilość: {ilosc:.2f}, rabat: {rabat:.2f}%.")
             except ValueError as blad:
                 print(f"  Błąd: {blad}")
                 continue
@@ -258,6 +263,7 @@ class InterfejsKonsolowy:
             opcje: Opcje = {
                 "1": ("Dodaj kolejny towar", None),
                 "2": ("Zatwierdź zamówienie", None),
+                "3": ("Usuń pozycję", None),
                 "0": ("Anuluj zamówienie", None),
             }
             self.wyswietl_menu("Co dalej?", opcje)
@@ -267,6 +273,9 @@ class InterfejsKonsolowy:
                 continue
             if wybor == "2":
                 break
+            if wybor == "3":
+                self._usun_pozycje_zamowienia(zamowienie)
+                continue
             if wybor == "0":
                 print("  Zamówienie anulowane.")
                 return
@@ -357,7 +366,11 @@ class InterfejsKonsolowy:
             print(f"  Nie udało się opłacić faktury: {blad}")
             return
 
+        # Wpłata zmniejsza saldo rozrachunkowe klienta (ujemne = łączna kwota zapłacona).
+        klient.aktualizuj_saldo(-kwota)
+
         print("  Płatność została zarejestrowana.")
+        print(f"  Saldo rozrachunkowe klienta: {klient.saldo:.2f} zł")
         self._wyswietl_fakture(faktura)
 
 
@@ -397,6 +410,32 @@ class InterfejsKonsolowy:
             return
 
         print(f"  Zamówienie nr {zamowienie.numer}: {zamowienie.status.value}")
+
+    def akcja_anulowanie_zamowienia(self) -> None:
+        """Obsługuje anulowanie zamówienia przez zalogowanego klienta."""
+        klient = self._pobierz_zalogowanego_klienta()
+        if klient is None:
+            print("  Tylko klient może anulować swoje zamówienie.")
+            return
+
+        if not klient.zamowienia:
+            print("  Nie masz jeszcze żadnych zamówień.")
+            return
+
+        numer = self._pobierz_int("  Numer zamówienia do anulowania: ")
+        zamowienie = self._znajdz_zamowienie_klienta(klient, numer)
+
+        if zamowienie is None:
+            print("  Nie znaleziono zamówienia o podanym numerze.")
+            return
+
+        try:
+            zamowienie.anuluj()
+        except ValueError as blad:
+            print(f"  Nie udało się anulować zamówienia: {blad}")
+            return
+
+        print(f"  Zamówienie nr {zamowienie.numer} zostało anulowane.")
 
 
     def akcja_kompletowanie_zamowienia(self) -> None:
@@ -535,6 +574,17 @@ class InterfejsKonsolowy:
                 f"minimum: {pozycja.stan_min:.2f}"
             )
 
+    def akcja_wartosc_zapasow(self) -> None:
+        """Wyświetla łączną wartość brutto zapasów magazynu dla kierownika."""
+        print("\n  --- Wartość zapasów ---")
+
+        if self.system.magazyn is None:
+            print("  Brak przypisanego magazynu.")
+            return
+
+        wartosc = self.system.magazyn.wartosc_zapasow()
+        print(f"  Łączna wartość brutto zapasów: {wartosc:.2f} zł")
+
     def akcja_przegladanie_magazynu(self) -> None:
         """Wyświetla aktualny stan magazynu dla magazyniera."""
         print("\n  --- Przegląd magazynu ---")
@@ -589,6 +639,70 @@ class InterfejsKonsolowy:
             )
         except ValueError as blad:
             print(f"  Błąd: {blad}")
+
+    def akcja_wprowadzenie_nowego_towaru(self) -> None:
+        """Obsługuje wprowadzenie nowego towaru do magazynu przez magazyniera."""
+        print("\n  --- Wprowadzenie nowego towaru ---")
+
+        if self.system.magazyn is None:
+            print("  Brak przypisanego magazynu.")
+            return
+
+        magazynier = self.system.zalogowany_uzytkownik
+        if not isinstance(magazynier, Magazynier):
+            print("  Tylko magazynier może wprowadzać nowe towary.")
+            return
+
+        typy: Opcje = {
+            "1": ("Materiał sypki", None),
+            "2": ("Materiał płytowy", None),
+            "3": ("Materiał dłużycowy", None),
+            "0": ("Anuluj", None),
+        }
+        self.wyswietl_menu("Typ towaru", typy)
+        wybor_typu = self.pobierz_wybor(typy)
+        if wybor_typu == "0":
+            return
+
+        nazwa = input("  Nazwa: ").strip()
+        producent = input("  Producent: ").strip()
+        cena_netto = self._pobierz_float("  Cena netto: ")
+        stawka_vat = self._pobierz_float("  Stawka VAT (%): ")
+        jednostka = self._wybierz_jednostke()
+        id_towaru = self._nastepne_id_towaru()
+
+        if wybor_typu == "1":
+            gestosc = self._pobierz_float("  Gęstość: ")
+            workowany = input("  Workowany? (t/n): ").strip().lower() == "t"
+            towar: Towar = MaterialSypki(
+                id_towaru, nazwa, producent, cena_netto, stawka_vat, jednostka, gestosc, workowany
+            )
+        elif wybor_typu == "2":
+            grubosc = self._pobierz_float("  Grubość: ")
+            dlugosc = self._pobierz_float("  Długość: ")
+            szerokosc = self._pobierz_float("  Szerokość: ")
+            towar = MaterialPlytowy(
+                id_towaru, nazwa, producent, cena_netto, stawka_vat, jednostka, grubosc, dlugosc, szerokosc
+            )
+        else:
+            dlugosc = self._pobierz_float("  Długość: ")
+            przekroj = input("  Przekrój: ").strip()
+            towar = MaterialDluzycowy(
+                id_towaru, nazwa, producent, cena_netto, stawka_vat, jednostka, dlugosc, przekroj
+            )
+
+        ilosc = self._pobierz_float("  Ilość początkowa: ")
+        stan_min = self._pobierz_float("  Stan minimalny: ")
+
+        try:
+            magazynier.wprowadz_nowy_towar(self.system.magazyn, towar, ilosc, stan_min)
+        except ValueError as blad:
+            print(f"  Błąd: {blad}")
+            return
+
+        # Katalog towarów systemu to migawka stanu magazynu — uzupełniamy go ręcznie.
+        self.system.towary.append(towar)
+        print(f"  Wprowadzono nowy towar [{towar.id_towaru}] {towar.nazwa}.")
 
     def akcja_przegladanie_zamowien(self) -> None:
         """Wyświetla listę zamówień dostępnych w systemie."""
@@ -681,6 +795,40 @@ class InterfejsKonsolowy:
         if not self.system.zamowienia:
             return 1
         return max(zamowienie.id for zamowienie in self.system.zamowienia) + 1
+
+    def _nastepne_id_towaru(self) -> int:
+        """Wyznacza kolejny identyfikator towaru na podstawie oferty systemu."""
+        if not self.system.towary:
+            return 1
+        return max(towar.id_towaru for towar in self.system.towary) + 1
+
+    def _wybierz_jednostke(self) -> JednostkaMiary:
+        """Pozwala wybrać jednostkę miary z listy dostępnych wartości."""
+        jednostki = list(JednostkaMiary)
+        opcje: Opcje = {
+            str(indeks): (jednostka.value, None)
+            for indeks, jednostka in enumerate(jednostki, start=1)
+        }
+        self.wyswietl_menu("Jednostka miary", opcje)
+        wybor = self.pobierz_wybor(opcje)
+        return jednostki[int(wybor) - 1]
+
+    def _usun_pozycje_zamowienia(self, zamowienie: Zamowienie) -> None:
+        """Wyświetla pozycje zamówienia i usuwa wybraną przez użytkownika."""
+        if not zamowienie.pozycje:
+            print("  Brak pozycji do usunięcia.")
+            return
+
+        for indeks, pozycja in enumerate(zamowienie.pozycje, start=1):
+            print(f"    {indeks}. {pozycja.towar.nazwa} | ilość: {pozycja.ilosc:.2f}")
+
+        numer = self._pobierz_int("  Numer pozycji do usunięcia: ")
+
+        try:
+            zamowienie.usun_pozycje(numer - 1)
+            print("  Pozycja została usunięta.")
+        except (IndexError, ValueError) as blad:
+            print(f"  Błąd: {blad}")
     
     def _znajdz_zamowienie_klienta(self, klient: Klient, numer: int) -> Optional[Zamowienie]:
         """Wyszukuje zamówienie klienta po numerze."""

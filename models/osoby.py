@@ -87,9 +87,13 @@ class Magazynier(Pracownik):
         pozycja = magazyn.znajdz_pozycje_towaru(towar.id_towaru)
         pozycja.przyjmij(ilosc)
 
-    def wprowadz_nowy_towar(self, magazyn: Magazyn, towar: Towar) -> None:
-        """Szkielet metody wprowadzania nowego towaru do magazynu."""
-        pass
+    def wprowadz_nowy_towar(self, magazyn: Magazyn, towar: Towar, ilosc: float, stan_min: float) -> None:
+        """Wprowadza nowy towar do magazynu, tworząc dla niego pozycję magazynową.
+
+        ValueError: Gdy towar o tym samym identyfikatorze już istnieje
+            albo gdy ilość lub stan minimalny są niepoprawne.
+        """
+        magazyn.dodaj_towar(towar, ilosc, stan_min)
 
 
 class Obsluga(Pracownik):
