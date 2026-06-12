@@ -311,11 +311,12 @@ class InterfejsKonsolowy:
 
         print("\n  --- Moje zamówienia ---")
 
-        if not klient.zamowienia:
+        zamowienia = klient.historia_zamowien()
+        if not zamowienia:
             print("  Brak zamówień.")
             return
 
-        for zamowienie in klient.zamowienia:
+        for zamowienie in zamowienia:
             self._wyswietl_zamowienie(zamowienie)
 
     def akcja_oplacenie_faktury(self) -> None:

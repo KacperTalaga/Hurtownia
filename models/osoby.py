@@ -38,7 +38,8 @@ class Klient(Osoba):
         pass
 
     def historia_zamowien(self) -> List[Zamowienie]:
-        pass
+        """Zwraca listę zamówień złożonych przez klienta."""
+        return self.zamowienia
 
     def aktualizuj_saldo(self, kwota: float) -> None:
         pass
