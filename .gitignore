@@ -3,6 +3,5 @@ __pycache__/
 *.py[cod]
 *.s
 HURTOWNIA.vpp.bak_000f
-dane.json
 .HURTOWNIA.vpp.lck
 HURTOWNIA.vpp.bak_*

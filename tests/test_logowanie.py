@@ -1,7 +1,5 @@
 """Testy jednostkowe logowania i wylogowania w fasadzie System."""
 from __future__ import annotations
-import os
-import tempfile
 import unittest
 
 from models.system import System, LOGIN_KIEROWNIKA, HASLO_KIEROWNIKA
@@ -11,15 +9,7 @@ class TestLogowanie(unittest.TestCase):
     """Sprawdza uwierzytelnianie użytkownika i zarządzanie sesją."""
 
     def setUp(self) -> None:
-        # Izolacja: każdy test działa w pustym katalogu, więc dane.json nie koliduje z repo
-        self._katalog = tempfile.TemporaryDirectory()
-        self._poprzedni_cwd = os.getcwd()
-        os.chdir(self._katalog.name)
         self.system = System()
-
-    def tearDown(self) -> None:
-        os.chdir(self._poprzedni_cwd)
-        self._katalog.cleanup()
 
     def test_logowanie_domyslnego_kierownika(self) -> None:
         """Konto startowe kierownika pozwala zalogować się tuż po starcie."""

@@ -9,7 +9,6 @@ if TYPE_CHECKING:
 
 from models.osoby import Klient, Kierownik, Magazynier, Obsluga
 from models.magazyn import Magazyn
-from models.repozytorium import Repozytorium
 from models.dane_startowe import DaneStartowe
 
 # Typy pracowników, których kierownik może rejestrować (nazwa -> klasa)
@@ -26,8 +25,7 @@ class System:
     """Fasada systemu — zarządza użytkownikami, sesją i referencjami do zasobów."""
 
     def __init__(self) -> None:
-        self.repozytorium: Repozytorium = Repozytorium()
-        self.uzytkownicy: List[Osoba] = self.repozytorium.wczytaj_uzytkownikow()
+        self.uzytkownicy: List[Osoba] = []
         self.zalogowany_uzytkownik: Optional[Osoba] = None
 
         self.magazyn: Optional[Magazyn] = DaneStartowe.utworz_magazyn_startowy()
@@ -39,10 +37,9 @@ class System:
 
         self.zamowienia: List[Zamowienie] = DaneStartowe.utworz_zamowienia_startowe()
         self.faktury: List[Faktura] = []
-        
-        # Konto startowe kierownika — odtwarzane przy starcie, dopóki realny kierownik nie istnieje
-        if not any(isinstance(u, Kierownik) for u in self.uzytkownicy):
-            self._dodaj_uzytkownika(Kierownik("Anna", "Kowalska", LOGIN_KIEROWNIKA, HASLO_KIEROWNIKA))
+
+        # Konto startowe kierownika — zasiewane przy każdym uruchomieniu (brak persystencji)
+        self._dodaj_uzytkownika(Kierownik("Anna", "Kowalska", LOGIN_KIEROWNIKA, HASLO_KIEROWNIKA))
 
     def rejestracja_klienta(self, imie: str, nazwisko: str, login: str, haslo: str, adres: str) -> bool:
         """Tworzy i rejestruje nowego klienta.
@@ -53,7 +50,6 @@ class System:
             return False
         nowy = Klient(imie, nazwisko, login, haslo, adres)
         self._dodaj_uzytkownika(nowy)
-        self.repozytorium.zapisz(self)
         return True
 
     def rejestracja_pracownika(self, typ: str, imie: str, nazwisko: str, login: str, haslo: str) -> bool:
@@ -69,7 +65,6 @@ class System:
             return False
         nowy = klasa(imie, nazwisko, login, haslo)
         self._dodaj_uzytkownika(nowy)
-        self.repozytorium.zapisz(self)
         return True
 
     def _dodaj_uzytkownika(self, osoba: Osoba) -> None:
