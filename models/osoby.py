@@ -98,11 +98,19 @@ class Obsluga(Pracownik):
            zamowienie.oznacz_skompletowane()
            return True
 
-    def wystaw_fakture(self, zamowienie: Zamowienie) -> Faktura:
-        """Wystawia fakturę dla skompletowanego zamówienia."""
+    def wystaw_fakture(self, zamowienie: Zamowienie, magazyn: Magazyn) -> Faktura:
+        """Wystawia fakturę dla skompletowanego zamówienia i wydaje towar z magazynu.
+
+        Wydanie zdejmuje zarezerwowany przy kompletowaniu towar ze stanu magazynu,
+        a zamówienie zostaje oznaczone jako zrealizowane.
+        """
 
         if zamowienie.status != StatusZamowienia.SKOMPLETOWANE:
             raise ValueError("Fakturę można wystawić tylko dla skompletowanego zamówienia.")
+
+        for pozycja_zamowienia in zamowienie.pozycje:
+            pozycja_magazynowa = magazyn.znajdz_pozycje_towaru(pozycja_zamowienia.towar.id_towaru)
+            pozycja_magazynowa.wydaj(pozycja_zamowienia.ilosc)
 
         numer_faktury = f"FV/{zamowienie.numer}"
         faktura = Faktura(numer_faktury, zamowienie.id, zamowienie)

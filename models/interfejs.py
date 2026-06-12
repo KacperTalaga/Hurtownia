@@ -439,6 +439,10 @@ class InterfejsKonsolowy:
             print("  Tylko pracownik obsługi może wystawiać faktury.")
             return
 
+        if self.system.magazyn is None:
+            print("  Brak przypisanego magazynu.")
+            return
+
         if not self.system.zamowienia:
             print("  Brak zamówień.")
             return
@@ -456,7 +460,7 @@ class InterfejsKonsolowy:
             return
 
         try:
-            faktura = obsluga.wystaw_fakture(zamowienie)
+            faktura = obsluga.wystaw_fakture(zamowienie, self.system.magazyn)
         except ValueError as blad:
             print(f"  Nie udało się wystawić faktury: {blad}")
             return
